@@ -99,3 +99,40 @@ async def add_api_platform_headers(request: Request, call_next):
     response.headers["X-RateLimit-Remaining"] = "1185"
     response.headers["X-RateLimit-Reset"] = str(int(time.time()) + 60)
     return response
+
+
+# SPA Static file mounting if frontend build exists
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+frontend_dir = os.environ.get("FRONTEND_DIST")
+if not frontend_dir:
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend_dist"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"),
+        "/app/frontend_dist",
+    ]
+    for c in candidates:
+        if os.path.isdir(c):
+            frontend_dir = os.path.abspath(c)
+            break
+
+if frontend_dir and os.path.isdir(frontend_dir):
+    assets_dir = os.path.join(frontend_dir, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa_app(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("ws/") or full_path.startswith("health") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            raise StarletteHTTPException(status_code=404, detail="Not found")
+        target_file = os.path.join(frontend_dir, full_path)
+        if os.path.isfile(target_file):
+            return FileResponse(target_file)
+        index_file = os.path.join(frontend_dir, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        raise StarletteHTTPException(status_code=404, detail="Not found")
+
