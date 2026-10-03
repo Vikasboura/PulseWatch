@@ -42,6 +42,11 @@ Instant WebSocket log streaming with client-side regex search, level filters, an
 
 ![Live Logs Terminal](docs/screenshots/live_logs.png)
 
+### Developer Authentication & Onboarding
+Clean, zero-friction authentication with developer JWT tokens, project scoping, and SHA-256 hashed API key management:
+
+![Authentication & Project Onboarding](docs/screenshots/auth_login.png)
+
 ---
 
 ## 3. Architecture
